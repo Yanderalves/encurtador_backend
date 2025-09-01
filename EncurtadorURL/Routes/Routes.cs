@@ -16,6 +16,9 @@ public static class Routes
             [FromBody] RequestEncurtarDto urlDto) =>
         {
             urlDto = new RequestEncurtarDto(Url: HttpUtility.UrlDecode(urlDto.Url));
+            
+            if (!urlDto.Url.StartsWith("http://") && !urlDto.Url.StartsWith("https://"))
+                urlDto = new RequestEncurtarDto(Url: $"https://{urlDto.Url}");
 
             if (!Uri.TryCreate(urlDto.Url, UriKind.Absolute, out var uri))
                 return Results.BadRequest(new { Result = "A URL fornecida não é válida." });
