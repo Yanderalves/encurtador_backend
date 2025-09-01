@@ -62,7 +62,9 @@ _ReSharper.*/
 /wwwroot/dist/
 
 TestResults/
-/Migrations/
+EncurtadorURL/Migrations/
+EncurtadorURL/Database.db
+
 
 # Docker files
 Dockerfile

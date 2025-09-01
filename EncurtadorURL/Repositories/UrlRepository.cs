@@ -13,9 +13,9 @@ public class UrlRepository : IUrlRepository
         _context = context;
     }
 
-    public async Task<bool> UrlExists(string url)
+    public async Task<URLModel?> GetUrlByUrl(string url)
     {
-        return await _context.URLs.AnyAsync(x => x.URLOriginal == url);
+        return await _context.URLs.FirstOrDefaultAsync(x => x.URLOriginal == url);
     }
 
     public async Task AddUrl(URLModel url)
