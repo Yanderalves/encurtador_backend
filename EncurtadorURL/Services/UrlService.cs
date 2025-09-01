@@ -2,8 +2,6 @@
 using EncurtadorURL.DTO;
 using EncurtadorURL.Models;
 using EncurtadorURL.Repositories;
-using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Http; // Adicione este using
 
 namespace EncurtadorURL.Services;
 
@@ -20,9 +18,10 @@ public class UrlService : IUrlService
 
     public async Task<URLModel> EncurtarUrl(RequestEncurtarDto urlDto)
     {
-        if (await _urlRepository.UrlExists(urlDto.Url))
+        var urlExists = await _urlRepository.GetUrlByUrl(urlDto.Url); 
+        if (urlExists is not null)
         {
-            throw new InvalidOperationException("A URL já foi encurtada");
+            throw new InvalidOperationException($"A URL já foi encurtada, {urlExists.URLEncurtada}");
         }
 
         var guid = Guid.NewGuid();

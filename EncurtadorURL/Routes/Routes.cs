@@ -42,10 +42,7 @@ public static class Routes
     
             var _url = await urlRepository.GetUrlByChave(url);
             
-            if(_url is null)
-                return Results.NotFound();
-    
-            return Results.Redirect(_url.URLOriginal);
-        }).WithDescription("Recebe a URL encurtada e faz o redirecionamento para a URL original");
+            return _url is null ? Results.NotFound() : Results.Redirect(_url.URLOriginal);
+        }).WithDescription("Recebe o código encurtado e faz o redirecionamento para a URL original");
     }
 }
