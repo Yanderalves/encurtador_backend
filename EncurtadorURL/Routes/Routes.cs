@@ -1,7 +1,5 @@
-﻿using System.Web;
-using EncurtadorURL.DTO;
+﻿using EncurtadorURL.DTO;
 using EncurtadorURL.Services;
-using EncurtadorURL.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EncurtadorURL.Routes;
@@ -10,7 +8,8 @@ public static class Routes
 {
     public static void UseRoutes(this IEndpointRouteBuilder routes)
     {
-        routes.MapPost("", async ([FromServices] IUrlService urlService, [FromBody] RequestEncurtarDto urlDto) =>
+        
+        routes.MapPost("/url", async ([FromServices] IUrlService urlService, [FromBody] RequestEncurtarDto urlDto) =>
         {
             var result = await urlService.EncurtarUrl(urlDto);
             
