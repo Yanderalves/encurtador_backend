@@ -1,6 +1,8 @@
 ﻿using System.Net.NetworkInformation;
+using System.Web;
 using EncurtadorURL.DTO;
 using EncurtadorURL.Models;
+using EncurtadorURL.Models.Response;
 using EncurtadorURL.Repositories;
 
 namespace EncurtadorURL.Services;
@@ -16,13 +18,24 @@ public class UrlService : IUrlService
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public async Task<URLModel> EncurtarUrl(RequestEncurtarDto urlDto)
+    public async Task<Result<URLModel>> EncurtarUrl(RequestEncurtarDto urlDto)
     {
-        var urlExists = await _urlRepository.GetUrlByUrl(urlDto.Url); 
+        urlDto = new RequestEncurtarDto(Url: HttpUtility.UrlDecode(urlDto.Url));
+
+        
+        if (!urlDto.Url.StartsWith("http://") && !urlDto.Url.StartsWith("https://"))
+            urlDto = new RequestEncurtarDto(Url: $"https://{urlDto.Url}");
+
+        if (!Uri.TryCreate(urlDto.Url, UriKind.Absolute, out var uri))
+            return Result<URLModel>.Failure("A URL fornecida não é válida.");
+
+        if (!await PingHost(uri.Host))
+            return Result<URLModel>.Failure("Não foi possível conectar a URL.");
+        
+        var urlExists = await _urlRepository.GetUrlByUrl(urlDto.Url);
+        
         if (urlExists is not null)
-        {
-            throw new InvalidOperationException($"A URL já foi encurtada, {urlExists.URLEncurtada}");
-        }
+            return Result<URLModel>.Failure($"Url Já foi ecncurtada. {urlExists.URLEncurtada}");
 
         var guid = Guid.NewGuid();
         var chave = guid.ToString().Substring(0, 8);
@@ -39,7 +52,7 @@ public class UrlService : IUrlService
         };
 
         await _urlRepository.AddUrl(newUrl);
-        return newUrl;
+        return Result<URLModel>.Success(newUrl);
     }
 
     public async Task<bool> PingHost(string host)
@@ -47,12 +60,21 @@ public class UrlService : IUrlService
         using var ping = new Ping();
         try
         {
-            var reply = await ping.SendPingAsync(host, 1000); // Timeout de 1000ms
+            var reply = await ping.SendPingAsync(host, 1000); 
             return reply.Status == IPStatus.Success;
         }
         catch (PingException)
         {
             return false;
         }
+    }
+
+    public async Task<Result<URLModel>> RetornarURLEncurtada(string codigoEncurtamento)
+    {
+        codigoEncurtamento = HttpUtility.UrlDecode(codigoEncurtamento);
+    
+        var urlEncurtada = await _urlRepository.GetUrlByChave(codigoEncurtamento);
+        
+        return urlEncurtada is null ? Result<URLModel>.Failure("URL não encontrada") : Result<URLModel>.Success(urlEncurtada);
     }
 }
