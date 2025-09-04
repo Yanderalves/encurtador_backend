@@ -6,7 +6,7 @@ namespace EncurtadorURL.Services;
 
 public interface IUrlService
 {
-    Task<Result<URLModel>> EncurtarUrl(RequestEncurtarDto urlDto);
-    Task<bool> PingHost(string host);
+    Task<Result<URLModel>> EncurtarUrl(RequestEncurtarDto urlDto, string baseUrl);
     Task<Result<URLModel>> RetornarURLEncurtada(string url);
+    public Task<bool> CheckUrlAvailability(string url);
 }

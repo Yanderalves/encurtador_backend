@@ -10,26 +10,25 @@ namespace EncurtadorURL.Services;
 public class UrlService : IUrlService
 {
     private readonly IUrlRepository _urlRepository;
-    private readonly IHttpContextAccessor _httpContextAccessor; 
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public UrlService(IUrlRepository urlRepository, IHttpContextAccessor httpContextAccessor) 
+    public UrlService(IUrlRepository urlRepository, IHttpClientFactory httpClientFactory) 
     {
         _urlRepository = urlRepository;
-        _httpContextAccessor = httpContextAccessor;
+        _httpClientFactory = httpClientFactory;
     }
 
-    public async Task<Result<URLModel>> EncurtarUrl(RequestEncurtarDto urlDto)
+    public async Task<Result<URLModel>> EncurtarUrl(RequestEncurtarDto urlDto, string baseUrl)
     {
         urlDto = new RequestEncurtarDto(Url: HttpUtility.UrlDecode(urlDto.Url));
 
-        
         if (!urlDto.Url.StartsWith("http://") && !urlDto.Url.StartsWith("https://"))
             urlDto = new RequestEncurtarDto(Url: $"https://{urlDto.Url}");
 
         if (!Uri.TryCreate(urlDto.Url, UriKind.Absolute, out var uri))
             return Result<URLModel>.Failure("A URL fornecida não é válida.");
 
-        if (!await PingHost(uri.Host))
+        if (!await CheckUrlAvailability(urlDto.Url))
             return Result<URLModel>.Failure("Não foi possível conectar a URL.");
         
         var urlExists = await _urlRepository.GetUrlByUrl(urlDto.Url);
@@ -39,9 +38,6 @@ public class UrlService : IUrlService
 
         var guid = Guid.NewGuid();
         var chave = guid.ToString().Substring(0, 8);
-
-        var request = _httpContextAccessor.HttpContext.Request;
-        var baseUrl = $"{request.Scheme}://{request.Host}";
 
         var newUrl = new URLModel
         {
@@ -55,19 +51,22 @@ public class UrlService : IUrlService
         return Result<URLModel>.Success(newUrl);
     }
 
-    public async Task<bool> PingHost(string host)
-    {
-        using var ping = new Ping();
-        try
+        public async Task<bool> CheckUrlAvailability(string url)
         {
-            var reply = await ping.SendPingAsync(host, 1000); 
-            return reply.Status == IPStatus.Success;
+            var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(5);
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                var response = await client.SendAsync(request);
+                return response.IsSuccessStatusCode;
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
+            }
         }
-        catch (PingException)
-        {
-            return false;
-        }
-    }
 
     public async Task<Result<URLModel>> RetornarURLEncurtada(string codigoEncurtamento)
     {

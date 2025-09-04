@@ -8,10 +8,11 @@ public static class Routes
 {
     public static void UseRoutes(this IEndpointRouteBuilder routes)
     {
-        
-        routes.MapPost("/url", async ([FromServices] IUrlService urlService, [FromBody] RequestEncurtarDto urlDto) =>
+        routes.MapPost("/url", async ([FromServices] IUrlService urlService,
+            [FromBody] RequestEncurtarDto urlDto, HttpContext httpContext) =>
         {
-            var result = await urlService.EncurtarUrl(urlDto);
+            var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}";
+            var result = await urlService.EncurtarUrl(urlDto, baseUrl);
             
             if(!result.IsSuccess)
                 return Results.BadRequest(result);
@@ -19,7 +20,8 @@ public static class Routes
                 
         }).WithDescription("Recebe uma URL e retorna ela encurtada");
 
-        routes.MapGet("{codigoEncurtamento}",async ([FromServices] IUrlService urlService, string codigoEncurtamento) =>
+        routes.MapGet("{codigoEncurtamento}",async ([FromServices] IUrlService urlService,
+            string codigoEncurtamento) =>
         {
             var result = await urlService.RetornarURLEncurtada(codigoEncurtamento);
             
