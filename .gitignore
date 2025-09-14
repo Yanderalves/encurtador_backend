@@ -58,6 +58,9 @@ _ReSharper.*/
 *.db
 *.mdb
 
+*.db-shm
+*.db-wal
+
 /wwwroot/lib/
 /wwwroot/dist/
 
